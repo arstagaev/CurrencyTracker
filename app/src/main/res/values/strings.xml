@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">CurrencyRateTracker1</string>
+    <string name="db_name">CurrencyRateTracker_DB</string>
+</resources>
