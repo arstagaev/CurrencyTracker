@@ -3,10 +3,14 @@ package com.arstagaev.currencyratetracker1.data.local.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairs
-import com.arstagaev.currencyratetracker1.data.local.db.models.Currencies
+import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
+import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
 
-@Database(entities = [Currencies::class, CachedCurrencyPairs::class], version = 1, exportSchema = true)
+@Database(entities = [
+  AvailableCurrencyDto::class,
+  CachedCurrencyPairsDto::class
+], version = 1, exportSchema = true)
+
 abstract class AppDatabase : RoomDatabase() {
 
   abstract fun currencyDao(): CurrencyDao

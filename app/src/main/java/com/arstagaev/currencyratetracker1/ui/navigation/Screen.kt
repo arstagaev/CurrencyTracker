@@ -1,6 +1,7 @@
 package com.arstagaev.currencyratetracker1.ui.navigation
 
 sealed class Screen(val route: String) {
-    object ListOfAvailableCur: Screen("coin_list_screen")
-    //object CoinDetailScreen: Screen("coin_detail_screen")
+    object AllCurrencies: Screen("all")
+    object FavCurrencies: Screen("fav")
+    object ToSortCurrencies: Screen("sort")
 }

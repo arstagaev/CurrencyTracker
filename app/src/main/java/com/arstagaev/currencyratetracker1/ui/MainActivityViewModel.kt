@@ -1,4 +1,4 @@
-package com.arstagaev.currencyratetracker1.ui.screens
+package com.arstagaev.currencyratetracker1.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
