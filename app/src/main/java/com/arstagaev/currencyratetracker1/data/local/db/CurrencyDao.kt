@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
+import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
 import com.arstagaev.currencyratetracker1.ui.models.Currency
 
 @Dao
@@ -39,14 +40,14 @@ interface CurrencyDao {
 
 
   // upd bool flags:
-  @Query("UPDATE AvailableCurrencyDto SET isBase = :isTarget_ WHERE abbreviation == :abbreviation_ ")
-  suspend fun updateTargetCurrency(abbreviation_: String, isTarget_: Boolean): Int?
+  @Query("UPDATE AvailableCurrencyDto SET isBase = :isBase_ WHERE abbreviation == :abbreviation_ ")
+  suspend fun updateTargetCurrency(abbreviation_: String, isBase_: Boolean): Int?
 
-  @Query("UPDATE AvailableCurrencyDto SET isBase = :isFavorite_ WHERE abbreviation == :abbreviation_ ")
+  @Query("UPDATE AvailableCurrencyDto SET isFavorite = :isFavorite_ WHERE abbreviation == :abbreviation_ ")
   suspend fun updateFavCurrency(abbreviation_: String, isFavorite_: Boolean): Int?
 
   @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation")
-  suspend fun getWhole(): List<Currency>?
+  suspend fun getWhole(): List<CurrencyDto>
 
 
   @Query("SELECT * FROM AvailableCurrencyDto WHERE isBase = 'true'")

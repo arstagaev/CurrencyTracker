@@ -15,16 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.arstagaev.currencyratetracker1.MainViewModel
 import com.arstagaev.currencyratetracker1.ui.navigation.Screen
+import com.arstagaev.currencyratetracker1.ui.screens.AllCurrenciesScreen
+import com.arstagaev.currencyratetracker1.ui.screens.FavoriteCurrenciesScreen
+import com.arstagaev.currencyratetracker1.ui.screens.SortScreen
+import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.ui.theme.CurrencyRateTracker1Theme
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,17 +49,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             CurrencyRateTracker1Theme {
                 val scaffoldState = rememberScaffoldState()
+                val navController = rememberNavController()
+
                 Scaffold(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ColorBackground),
                     scaffoldState = scaffoldState,
                     topBar = {
                         TopBar()
                     },
                     content = {
-                        MainScreen(paddingValues = it)
+                        NavigationScreen(navController, it)
                     },
                     bottomBar = {
-                        BottomBar()
+                        BottomBar(navController)
                     }
                 )
             }
@@ -71,7 +77,7 @@ class MainActivity : ComponentActivity() {
             Modifier
                 .fillMaxWidth()
                 .height(90.dp)
-                .background(Color.Green),
+                .background(Color.LightGray),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
             var expanded           by remember { mutableStateOf(false) }
@@ -149,8 +155,11 @@ class MainActivity : ComponentActivity() {
         }
     }
     @Composable
-    fun MainScreen(paddingValues: PaddingValues) {
-        val navController = rememberNavController()
+    fun NavigationScreen(
+        navController: NavHostController,
+        paddingValues: PaddingValues
+    ) {
+        // create vm by factory
         var mainViewModel = hiltViewModel<MainViewModel>()
         //val availableCurrencies = mainViewModel.bleCommandTrain.collectAsState(initial = null) //remember {  }
 
@@ -174,52 +183,62 @@ class MainActivity : ComponentActivity() {
             composable(
                 route = Screen.AllCurrencies.route
             ) {
-                //MainScreen(paddingValues)
+                AllCurrenciesScreen(navController,mainViewModel)
             }
 
             composable(
                 route = Screen.FavCurrencies.route
             ) {
-                //MainScreen()
+                FavoriteCurrenciesScreen(navController,mainViewModel)
+
+                //mainViewModel.refreshPairCurrenciesFromDB()
             }
 
             composable(
                 route = Screen.ToSortCurrencies.route
             ) {
-                //MainScreen()
+                SortScreen(navController,mainViewModel)
+                //mainViewModel.refreshPairCurrenciesFromDB()
             }
 
         }
     }
 
     @Composable
-    fun BottomBar() {
+    fun BottomBar(navController: NavHostController) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .height(90.dp)
-                .background(Color.Green),
+                .background(Color.Gray),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
                     .fillMaxSize()
                     .weight(1f)
+                    .align(Alignment.CenterVertically)
                     .clickable {
+                        navController.navigate(Screen.AllCurrencies.route)
 
                     }) {
-                Text(text = "Популярное", color = Color.Black)
+                Text(modifier = Modifier.align(Alignment.Center), text = "Популярное", color = Color.Black)
             }
             Box(
                 Modifier
                     .fillMaxSize()
                     .weight(1f)
+                    .align(Alignment.CenterVertically)
                     .clickable {
-
+                        navController.navigate(Screen.FavCurrencies.route)
                     }) {
-                Text(text = "Избранное", color = Color.Black)
+                Text(modifier = Modifier.align(Alignment.Center), text = "Избранное", color = Color.Black)
             }
         }
     }
-}
 
+    override fun onPause() {
+        super.onPause()
+        mainViewModel.refreshPairCurrenciesFromDB()
+    }
+}

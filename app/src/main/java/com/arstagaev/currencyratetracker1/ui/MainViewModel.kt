@@ -1,4 +1,4 @@
-package com.arstagaev.currencyratetracker1
+package com.arstagaev.currencyratetracker1.ui
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.arstagaev.currencyratetracker1.data.CurrencyRepository
 import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
+import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
 import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
-import com.arstagaev.currencyratetracker1.ui.models.Currency
 import com.arstagaev.currencyratetracker1.utils.Resource
 import com.arstagaev.currencyratetracker1.utils.logAction
 import com.arstagaev.currencyratetracker1.utils.logError
@@ -15,6 +15,7 @@ import com.arstagaev.currencyratetracker1.utils.logInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,9 +28,20 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     private val _aval: MutableState<Resource<AvailableCurrencies>?> = mutableStateOf(null)
     val available: State<Resource<AvailableCurrencies>?> get() = _aval
 
-    var listOfAvailableCurrencies = mutableStateListOf<AvailableCurrencyDto>()
-    var listOfPairCurrencies = mutableStateListOf<Currency>()
+    // Using mutableStateListOf to hold the list of items, this will recompose when the list changes.
 
+
+    var listOfAvailableCurrencies = mutableStateListOf<AvailableCurrencyDto>()
+
+
+
+    var listOfPairCurrencies = mutableStateListOf<CurrencyDto>()
+
+    //private val _elements2 = mutableStateListOf<CurrencyDto>()
+    //val elements2: List<CurrencyDto> = listOfPairCurrencies
+
+    var isLoading = mutableStateOf(true)
+    var isPendulumState = mutableStateOf(false)
     //private val _currentDoorLocks = MutableStateFlow<Resource<ListOfCurrencies>>()
     //val currentDoorLocks : StateFlow<ListOfCurrencies> get() =  _currentDoorLocks //get() = _currencyPrices
 //    val recommendedMovie: MutableState<DataState<BaseModel>?> = mutableStateOf(null)
@@ -37,7 +49,13 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     var bleCommandTrain = MutableSharedFlow<Resource<AvailableCurrencies>>(50,50, BufferOverflow.SUSPEND)
 
     init {
+        isLoading.value = true
         refreshCurrencyPairs("USD")
+    }
+    var onUpdate = mutableStateOf(0)
+
+    fun updateUI() {
+        onUpdate.value = (0..1_000_000).random()
     }
     fun getAvailableCurrencies() {
         listOfAvailableCurrencies.clear()
@@ -47,6 +65,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                 when(it) {
                     is Resource.Loading -> {
                         logInfo("Loading..")
+                        isLoading.value = true
                     }
                     is Resource.Success -> {
                         logInfo("Success..")
@@ -72,12 +91,15 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                         logInfo("input: ${inputAvailableCur.joinToString()}")
 
                         // get may be new
-                        getAvailableCurrenciesFromDB()
+                        refreshAvailableCurrenciesFromDB()
+                        isLoading.value = false
                     }
                     is Resource.Error -> {
+
                         logError("Error in: getAvailableCurrencies()")
                         // may be we are offline:
-                        getAvailableCurrenciesFromDB()
+                        refreshAvailableCurrenciesFromDB()
+                        isLoading.value = false
                     }
                 }
 //                bleCommandTrain.emit(it)
@@ -93,6 +115,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                 when(it) {
                     is Resource.Loading -> {
                         logInfo("Loading..")
+                        isLoading.value = true
                     }
                     is Resource.Success -> {
                         logInfo("Success..")
@@ -116,12 +139,14 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                         logInfo("input: ${inputAvailableCur.joinToString()}")
 
                         // get may be new
-                        getPairCurrenciesFromDB()
+                        refreshPairCurrenciesFromDB()
+                        isLoading.value = false
                     }
                     is Resource.Error -> {
                         logError("Error in: getAvailableCurrencies()")
                         // may be we are offline:
-                        getPairCurrenciesFromDB()
+                        refreshPairCurrenciesFromDB()
+                        isLoading.value = false
                     }
                 }
 //                bleCommandTrain.emit(it)
@@ -131,26 +156,43 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         }
     }
 
-    private fun getAvailableCurrenciesFromDB() {
+    suspend fun updateFavState(index: Int, abbreviation: String, newFavoriteState: Boolean) {
+        listOfPairCurrencies[index] = listOfPairCurrencies[index].also { it.isFavorite = newFavoriteState}
+        repo.updateFavCurrency(abbreviation = abbreviation, isFavorite = newFavoriteState)
+        //getPairCurrenciesFromDB()
+    }
+
+
+
+    // get
+
+    private fun refreshAvailableCurrenciesFromDB() {
         viewModelScope.launch {
+            isLoading.value = true
             listOfAvailableCurrencies.clear()
 
             logAction(">>>  ${repo.getCachedCurrencies()?.joinToString()}")
 
             repo.getCachedCurrencies()?.let { listOfAvailableCurrencies.addAll(it) }
-
+            isLoading.value = false
         }
 
     }
 
-    private fun getPairCurrenciesFromDB() {
+    fun refreshPairCurrenciesFromDB() {
         viewModelScope.launch {
+            isLoading.value = true
             listOfPairCurrencies.clear()
 
-            logAction(">>>  ${repo.getCachedCurrencies()?.joinToString()}")
-
+            logAction(">>>  ${repo.getWholeListCurrencies()?.size}")
+            delay(10)
             repo.getWholeListCurrencies()?.let { listOfPairCurrencies.addAll(it) }
-
+            delay(100)
+            repo.getWholeListCurrencies()?.forEach {
+                println("~~~ ${it.toString()}")
+            }
+            logAction("<>>> ${listOfPairCurrencies.joinToString()}")
+            isLoading.value = false
         }
 
     }

@@ -64,9 +64,11 @@ class CurrencyRepository @Inject constructor(
 
     }
 
-    suspend fun updateTargetCurrency(abbreviation: String, isTarget: Boolean) {
-        currenciesDao.updateTargetCurrency(abbreviation_ = abbreviation, isTarget_ = isTarget)
-    }
+    suspend fun updateBaseCurrency(abbreviation: String, isBase: Boolean) =
+        currenciesDao.updateTargetCurrency(abbreviation_ = abbreviation, isBase_ = isBase)
+
+    suspend fun updateFavCurrency(abbreviation: String, isFavorite: Boolean) =
+        currenciesDao.updateFavCurrency(abbreviation_ = abbreviation, isFavorite_ = isFavorite)
 
     suspend fun getCachedCurrencies() = currenciesDao.getCurrencies()
 
