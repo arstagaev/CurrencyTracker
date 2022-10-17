@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +29,7 @@ import com.arstagaev.currencyratetracker1.ui.custom_tools.Pendulum
 import com.arstagaev.currencyratetracker1.ui.custom_tools.ShimmerAnimation
 import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
+import com.arstagaev.currencyratetracker1.utils.extensions.toast
 import kotlinx.coroutines.launch
 
 
@@ -75,6 +77,7 @@ fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: Ma
 @Composable
 fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    val ctx = LocalContext.current
     var isFav by remember { mutableStateOf(item.isFavorite) }
     // This will detect any changes to data and recompose your composable.
     Card(
@@ -96,6 +99,7 @@ fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) 
                             // My easter egg for reviewer:
                             mainViewModel.isPendulumState.value =
                                 !mainViewModel.isPendulumState.value
+                            ctx.toast("Пасхалка: строки могут еще так крутиться)")
                         },
                         onTap = { }
                     )

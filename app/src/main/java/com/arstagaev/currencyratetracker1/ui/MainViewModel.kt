@@ -102,9 +102,6 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                         isLoading.value = false
                     }
                 }
-//                bleCommandTrain.emit(it)
-//                _aval.value = it
-                //_currentDoorLocks.value = (it)
             }.launchIn(viewModelScope)
         }
     }
