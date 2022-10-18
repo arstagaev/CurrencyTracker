@@ -36,5 +36,16 @@ object PreferenceStorage {
             it.putString("nsort", value)
         }
 
+    var baseCurrency: String
+        get() = preferences.getString("baseCurrency","USD").toString()
+        set(value) = preferences.edit {
+            it.putString("baseCurrency", value)
+        }
+
+    var lastTimeOfRequestAvailableCurrency: String
+        get() = preferences.getString("lastTimeAvailableCurr_request", System.currentTimeMillis().toString() ).toString()
+        set(value) = preferences.edit {
+            it.putString("lastTimeAvailableCurr_request", value)
+        }
 
 }

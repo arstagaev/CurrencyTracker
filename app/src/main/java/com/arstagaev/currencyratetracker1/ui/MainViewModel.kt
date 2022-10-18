@@ -1,5 +1,7 @@
 package com.arstagaev.currencyratetracker1.ui
 
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,10 +13,12 @@ import com.arstagaev.currencyratetracker1.data.local.sharedpref.PreferenceStorag
 import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
 import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.utils.Resource
+import com.arstagaev.currencyratetracker1.utils.check_internet.ConnectionState
 import com.arstagaev.currencyratetracker1.utils.logAction
 import com.arstagaev.currencyratetracker1.utils.logError
 import com.arstagaev.currencyratetracker1.utils.logInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -25,22 +29,11 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : ViewModel() {
 
-    val availableCurrencies: MutableState<Resource<AvailableCurrencies>?> = mutableStateOf(null)
-
-    private val _aval: MutableState<Resource<AvailableCurrencies>?> = mutableStateOf(null)
-    val available: State<Resource<AvailableCurrencies>?> get() = _aval
-
-    // Using mutableStateListOf to hold the list of items, this will recompose when the list changes.
-
-
     var listOfAvailableCurrencies = mutableStateListOf<AvailableCurrencyDto>()
-
-
-
     var listOfPairCurrencies = mutableStateListOf<CurrencyDto>()
 
-    //private val _elements2 = mutableStateListOf<CurrencyDto>()
-    //val elements2: List<CurrencyDto> = listOfPairCurrencies
+    var baseCurrency = mutableStateOf(PreferenceStorage.baseCurrency)
+
     var sortStyle = mutableStateOf(
             when(PreferenceStorage.sortStyle) {
                 "1" -> SortState.BY_ABBREVIATION_ASC
@@ -52,120 +45,127 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         )
     var isLoading = mutableStateOf(true)
     var isPendulumState = mutableStateOf(false)
-    //private val _currentDoorLocks = MutableStateFlow<Resource<ListOfCurrencies>>()
-    //val currentDoorLocks : StateFlow<ListOfCurrencies> get() =  _currentDoorLocks //get() = _currencyPrices
-//    val recommendedMovie: MutableState<DataState<BaseModel>?> = mutableStateOf(null)
-//    val artist: MutableState<DataState<Artist>?> = mutableStateOf(null)
-    var bleCommandTrain = MutableSharedFlow<Resource<AvailableCurrencies>>(50,50, BufferOverflow.SUSPEND)
+    var isShowingDialog = mutableStateOf(false)
+    var connectionState = mutableStateOf<ConnectionState>(ConnectionState.Unavailable)
 
     init {
         isLoading.value = true
-        refreshCurrencyPairs("USD")
+        refreshCurrencyPairs(baseCurrency.value)
     }
-    var onUpdate = mutableStateOf(0)
 
-    fun updateUI() {
-        onUpdate.value = (0..1_000_000).random()
-    }
-    fun getAvailableCurrencies() {
+    fun getAvailableCurrencies(): Boolean {
+        var isSuccess = false
         listOfAvailableCurrencies.clear()
 
         viewModelScope.launch(Dispatchers.IO) {
-            repo.getAvailableCurrencies().onEach {
-                when(it) {
-                    is Resource.Loading -> {
-                        logInfo("Loading..")
-                        isLoading.value = true
-                    }
-                    is Resource.Success -> {
-                        logInfo("Success..")
-                        //for tests
-                        val inputAvailableCur = arrayListOf<AvailableCurrencyDto>()
-                        //getAvailableCurrenciesFromDB()
-
-
-                        it.data.symbols?.forEach { (abbreviation, name) ->
-                            inputAvailableCur.add(AvailableCurrencyDto( abbreviation = abbreviation, name = name))
-
-                            repo.setAvailableCurrency(
-                                AvailableCurrencyDto(
-                                    abbreviation = abbreviation,
-                                    name = name,
-                                    isBase = false,
-                                    isFavorite = false
-                                )
-                            )
-
+            if (isNotFrequentRequest() && connectionState.value == ConnectionState.Available) {
+                repo.getAvailableCurrencies().onEach {
+                    when(it) {
+                        is Resource.Loading -> {
+                            logInfo("Loading..")
+                            isLoading.value = true
                         }
+                        is Resource.Success -> {
+                            logInfo("Success..")
+                            //for tests
+                            val inputAvailableCur = arrayListOf<AvailableCurrencyDto>()
+                            //getAvailableCurrenciesFromDB()
 
-                        logInfo("input: ${inputAvailableCur.joinToString()}")
 
-                        // get may be new
-                        refreshAvailableCurrenciesFromDB()
-                        isLoading.value = false
+                            it.data.symbols?.forEach { (abbreviation, name) ->
+                                inputAvailableCur.add(AvailableCurrencyDto( abbreviation = abbreviation, name = name))
+
+                                repo.setAvailableCurrency(
+                                    AvailableCurrencyDto(
+                                        abbreviation = abbreviation,
+                                        name = name,
+                                        isBase = false,
+                                        isFavorite = false
+                                    )
+                                )
+
+                            }
+
+                            // get may be new
+                            refreshAvailableCurrenciesFromDB()
+                            isLoading.value = false
+                            isSuccess = true
+                        }
+                        is Resource.Error -> {
+
+                            logError("Error in: getAvailableCurrencies()")
+                            // may be we are offline:
+                            refreshAvailableCurrenciesFromDB()
+                            isLoading.value = false
+                            isSuccess = false
+                        }
                     }
-                    is Resource.Error -> {
+                }.launchIn(viewModelScope)
+            } else {
+                refreshAvailableCurrenciesFromDB()
+                isLoading.value = false
+                isSuccess = false
+            }
 
-                        logError("Error in: getAvailableCurrencies()")
-                        // may be we are offline:
-                        refreshAvailableCurrenciesFromDB()
-                        isLoading.value = false
-                    }
-                }
-            }.launchIn(viewModelScope)
         }
+        return isSuccess
     }
 
-    fun refreshCurrencyPairs(baseCurrency: String?): Boolean{
+    fun refreshCurrencyPairs(baseCurrency: String?): Boolean {
         var isSuccess = false
         if(baseCurrency == null || baseCurrency.toCharArray().size != 3) {
-            return false
+            return isSuccess
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            repo.getAllPairsCurrencies(baseCurrency = baseCurrency).onEach {
-                when(it) {
-                    is Resource.Loading -> {
-                        logInfo("Loading..")
-                        isLoading.value = true
-                    }
-                    is Resource.Success -> {
-                        logInfo("Success..")
-
-                        var inputAvailableCur = arrayListOf<CachedCurrencyPairsDto>()
-
-
-                        it.data.rates?.forEach { (abbreviation, value)->
-                            inputAvailableCur.add(
-                                CachedCurrencyPairsDto(
-                                    abbreviation = abbreviation,
-                                    value = (value.toDoubleOrNull() ?: "0") as Double
-                                )
-                            )
+            if (connectionState.value == ConnectionState.Available) {
+                repo.getAllPairsCurrencies(baseCurrency = baseCurrency).onEach {
+                    when(it) {
+                        is Resource.Loading -> {
+                            logInfo("Loading..")
+                            isLoading.value = true
                         }
+                        is Resource.Success -> {
+                            logInfo("Success..")
 
-                        repo.saveCurrenciesPairs(inputAvailableCur)
+                            var inputAvailableCur = arrayListOf<CachedCurrencyPairsDto>()
 
 
-                        logInfo("input: ${inputAvailableCur.joinToString()}")
+                            it.data.rates?.forEach { (abbreviation, value)->
+                                inputAvailableCur.add(
+                                    CachedCurrencyPairsDto(
+                                        abbreviation = abbreviation,
+                                        value = (value.toDoubleOrNull() ?: "0") as Double
+                                    )
+                                )
+                            }
 
-                        // get may be new
-                        refreshPairCurrenciesFromDB(sortStyle.value)
-                        isLoading.value = false
-                        isSuccess = true
+                            repo.saveCurrenciesPairs(inputAvailableCur)
+
+
+                            logInfo("input: ${inputAvailableCur.joinToString()}")
+
+                            // get may be new
+                            refreshPairCurrenciesFromDB(sortStyle.value)
+                            isLoading.value = false
+                            isSuccess = true
+                        }
+                        is Resource.Error -> {
+                            logError("Error in: getAvailableCurrencies()")
+                            // may be we are offline:
+                            refreshPairCurrenciesFromDB(sortStyle.value)
+                            isLoading.value = false
+                            isSuccess = false
+
+                        }
                     }
-                    is Resource.Error -> {
-                        logError("Error in: getAvailableCurrencies()")
-                        // may be we are offline:
-                        refreshPairCurrenciesFromDB(sortStyle.value)
-                        isLoading.value = false
-                        isSuccess = false
-                    }
-                }
-//                bleCommandTrain.emit(it)
-//                _aval.value = it
-                //_currentDoorLocks.value = (it)
-            }.launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
+            } else {
+                refreshPairCurrenciesFromDB(sortStyle.value)
+                isLoading.value = false
+                isSuccess = false
+            }
+
         }
         return isSuccess
     }
@@ -173,7 +173,6 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     suspend fun updateFavState(index: Int, abbreviation: String, newFavoriteState: Boolean) {
         listOfPairCurrencies[index] = listOfPairCurrencies[index].also { it.isFavorite = newFavoriteState}
         repo.updateFavCurrency(abbreviation = abbreviation, isFavorite = newFavoriteState)
-        //getPairCurrenciesFromDB()
     }
 
     suspend fun sortByAbbreviation(byAscending: Boolean) {
@@ -194,9 +193,8 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
             isLoading.value = true
             listOfAvailableCurrencies.clear()
 
-            logAction(">>>  ${repo.getCachedCurrencies()?.joinToString()}")
-
             repo.getCachedCurrencies()?.let { listOfAvailableCurrencies.addAll(it) }
+            delay(100)
             isLoading.value = false
         }
 
@@ -207,13 +205,23 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
             isLoading.value = true
             listOfPairCurrencies.clear()
 
-            delay(10)
             repo.getWholeListCurrencies(sortState)?.let { listOfPairCurrencies.addAll(it) }
             delay(100)
 
-            logAction("<>>> ${listOfPairCurrencies.joinToString()}")
+            logAction("refreshPairCurrenciesFromDB(): ${listOfPairCurrencies.joinToString()}")
             isLoading.value = false
         }
 
+    }
+
+    private fun isNotFrequentRequest() : Boolean {
+        val lastRequestTime = PreferenceStorage.lastTimeOfRequestAvailableCurrency.toLongOrNull()
+
+        return lastRequestTime != null && (System.currentTimeMillis() - lastRequestTime) < AVAILABLE_REQUEST_INTERVAL
+    }
+
+    companion object {
+        // 2 hours:
+        const val AVAILABLE_REQUEST_INTERVAL = 7_200_000L
     }
 }

@@ -82,7 +82,6 @@ fun CurrencyRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
                             mainViewModel.updateFavState(index, item.abbreviation, newFavoriteState = !item.isFavorite)
                         }
                         isFav = !item.isFavorite
-                        mainViewModel.updateUI()
 
                     }
             ) {

@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    val fontSizeRow = 20.sp
     Column(
         Modifier.fillMaxSize().background(ColorBackground).padding()
     ) {
@@ -34,7 +35,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
         ) {
             Text(
                 modifier = Modifier.fillMaxWidth().height(120.dp).padding(start = 10.dp),
-                text = "Сортировка",
+                text = "Сортировка:",
                 color = Color.Black,
                 fontSize = 40.sp
             )
@@ -44,7 +45,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                 .fillMaxWidth()
                 .height(70.dp)
                 .padding(10.dp),
-            elevation = 20.dp
+            elevation = 5.dp
         ) {
             Box(
                 Modifier
@@ -63,7 +64,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                     modifier = Modifier.fillMaxWidth().height(120.dp).padding(start = 10.dp),
                     text = "по Алфавиту и Возрастанию",
                     color = Color.Black,
-                    fontSize = 40.sp
+                    fontSize = fontSizeRow
                 )
             }
         }
@@ -72,7 +73,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                 .fillMaxWidth()
                 .height(70.dp)
                 .padding(10.dp),
-            elevation = 20.dp
+            elevation = 5.dp
         ) {
             Box(
                 Modifier
@@ -91,7 +92,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                     modifier = Modifier.fillMaxWidth().height(120.dp).padding(start = 10.dp),
                     text = "по Алфавиту и Убыванию",
                     color = Color.Black,
-                    fontSize = 40.sp
+                    fontSize = fontSizeRow
                 )
             }
         }
@@ -100,7 +101,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                 .fillMaxWidth()
                 .height(70.dp)
                 .padding(10.dp),
-            elevation = 20.dp
+            elevation = 5.dp
         ) {
             Box(
                 Modifier
@@ -119,7 +120,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                     modifier = Modifier.fillMaxWidth().height(120.dp).padding(start = 10.dp),
                     text = "по Значению и Возрастанию",
                     color = Color.Black,
-                    fontSize = 40.sp
+                    fontSize = fontSizeRow
                 )
             }
         }
@@ -128,7 +129,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                 .fillMaxWidth()
                 .height(70.dp)
                 .padding(10.dp),
-            elevation = 20.dp
+            elevation = 5.dp
         ) {
             Box(
                 Modifier
@@ -147,7 +148,7 @@ fun SortScreen(navController: NavHostController, mainViewModel: MainViewModel) {
                     modifier = Modifier.fillMaxWidth().height(120.dp).padding(start = 10.dp),
                     text = "по Значению и Убыванию",
                     color = Color.Black,
-                    fontSize = 40.sp
+                    fontSize = fontSizeRow
                 )
             }
         }

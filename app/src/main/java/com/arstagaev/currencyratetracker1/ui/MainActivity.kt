@@ -4,26 +4,39 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
 import com.arstagaev.currencyratetracker1.data.local.sharedpref.PreferenceStorage
-import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.ui.navigation.Screen
 import com.arstagaev.currencyratetracker1.ui.screens.AllCurrenciesScreen
 import com.arstagaev.currencyratetracker1.ui.screens.FavoriteCurrenciesScreen
@@ -31,8 +44,11 @@ import com.arstagaev.currencyratetracker1.ui.screens.SortScreen
 import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.ui.theme.CurrencyRateTracker1Theme
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
+import com.arstagaev.currencyratetracker1.utils.check_internet.ConnectionState
+import com.arstagaev.currencyratetracker1.utils.check_internet.connectivityState
+import com.arstagaev.currencyratetracker1.utils.extensions.toast
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -40,19 +56,25 @@ class MainActivity : ComponentActivity() {
     private val splashViewModel: MainActivityViewModel by viewModels()
     private val mainViewModel: MainViewModel by viewModels()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
 //        installSplashScreen().apply {
 //            setKeepOnScreenCondition { splashViewModel.isLoading.value }
 //        }
+        if (!mainViewModel.getAvailableCurrencies()) {
+            applicationContext.toast("Ошибка запроса в сеть. Данные не обновленны")
+        }
 
-        mainViewModel.getAvailableCurrencies()
+        mainViewModel.isShowingDialog.value = false
 
         setContent {
             CurrencyRateTracker1Theme {
                 val scaffoldState = rememberScaffoldState()
                 val navController = rememberNavController()
+                val connection by connectivityState()
+                mainViewModel.connectionState.value = connection
 
                 Scaffold(
                     modifier = Modifier
@@ -77,91 +99,69 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun TopBar(navController: NavHostController) {
         val coroutineScope = rememberCoroutineScope()
-        Row(
+
+        Column(
             Modifier
                 .fillMaxWidth()
-                .height(90.dp)
-                .background(Color.LightGray),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-            var expanded           by remember { mutableStateOf(false) }
-            var selectedOptionText by remember { mutableStateOf("USD") }
-            //val modifier = Modifier.fillMaxSize().weight(1f)
 
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .weight(2f)
-                .align(Alignment.CenterVertically)
-                .padding(vertical = 10.dp)) {
-                ExposedDropdownMenuBox(
-                    modifier = Modifier.fillMaxSize(),
-                    expanded = expanded,
-                    onExpandedChange = {
-                        expanded = !expanded
-                    }
-                ) {
-                    TextField(
-                        modifier=Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        value = selectedOptionText,
-                        onValueChange = {  },
-                        label = { Text("Выбранная валюта:", fontSize = 20.sp, color = Color.Black) },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = expanded
-                            )
-                        },
-                        textStyle = TextStyle.Default.copy(fontSize = 30.sp),
-                        colors = ExposedDropdownMenuDefaults.textFieldColors(
-                            textColor = Color.Black,
-                            backgroundColor = Color.Transparent,
-                            placeholderColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,   // bottom line in like edittext
-                            unfocusedIndicatorColor = Color.Transparent, // bottom line in like edittext
-                            cursorColor = Color.Transparent,
-                        )//, textStyle = TextStyle(fontSize = TextUnit(20f, TextUnitType.Sp))
-                    )
+        ) {
+            AnimatedVisibility(visible = mainViewModel.connectionState.value == ConnectionState.Unavailable){
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .background(Color.DarkGray),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(modifier = Modifier, text = "Нет сети, проверьте настройки подключения", color = Color.Red, textAlign = TextAlign.Center)
 
-                    ExposedDropdownMenu(
-                        modifier=Modifier.fillMaxWidth(),
-                        expanded = expanded,
-                        onDismissRequest = {
-                            expanded = false
-                        }
-                    ) {
-                        mainViewModel.listOfAvailableCurrencies.forEach { selectionOption ->
-                            DropdownMenuItem(
-                                modifier = Modifier.fillMaxSize(),
-                                onClick = {
-                                    selectedOptionText = selectionOption.abbreviation
-
-                                    expanded = false
-                                    mainViewModel.refreshCurrencyPairs(selectedOptionText)
-
-                                }
-                            ) {
-                                Text(text = selectionOption.abbreviation)
-                            }
-                        }
-                    }
                 }
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .align(Alignment.CenterVertically)
-                    .padding(vertical = 20.dp, horizontal = 30.dp)
-                    .clickable {
-                        navController.navigate(Screen.ToSortCurrencies.route)
+
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .background(Color.LightGray),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+
+                //var chosenCurrency    by remember { mainViewModel.baseCurrency  }
+
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .weight(2f)
+                        .align(Alignment.CenterVertically)
+                        .clickable {
+                            mainViewModel.isShowingDialog.value = true
+                        }) {
+                    Text(modifier = Modifier.align(Alignment.Center), text = buildAnnotatedString {
+                        append("Выбранная валюта: ")
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold))
+                        {
+                            append("${mainViewModel.baseCurrency.value}")
+                        }
+                    }, color = Color.Black)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
+                        .padding(vertical = 20.dp, horizontal = 30.dp)
+                        .clickable {
+                            navController.navigate(Screen.ToSortCurrencies.route)
 
 
-                    }
-            ) {
-                Image(modifier = Modifier.size(60.dp), painter = painterResource(id = CurRDrawable.baseline_sort_24), contentDescription = "Sort")
-                //Text(modifier = Modifier, text = "Сортировка", fontSize = 20.sp, color = Color.Black)
+                        }
+                ) {
+                    Image(modifier = Modifier.size(60.dp), painter = painterResource(id = CurRDrawable.baseline_sort_24), contentDescription = "Sort")
+                    //Text(modifier = Modifier, text = "Сортировка", fontSize = 20.sp, color = Color.Black)
+                }
             }
         }
+
     }
     @Composable
     fun NavigationScreen(
@@ -185,7 +185,9 @@ class MainActivity : ComponentActivity() {
 //
 //            }
 //        }
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.AllCurrencies.route
@@ -210,8 +212,11 @@ class MainActivity : ComponentActivity() {
                     SortScreen(navController,mainViewModel)
                     //mainViewModel.refreshPairCurrenciesFromDB()
                 }
-
             }
+            if (mainViewModel.isShowingDialog.value) {
+                listOfCurrencies()
+            }
+
         }
 
     }
@@ -245,6 +250,66 @@ class MainActivity : ComponentActivity() {
                         navController.navigate(Screen.FavCurrencies.route)
                     }) {
                 Text(modifier = Modifier.align(Alignment.Center), text = "Избранное", color = Color.Black)
+            }
+        }
+    }
+
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Composable
+    fun listOfCurrencies() {
+        var ctx = LocalContext.current
+
+        Dialog(
+            onDismissRequest = {
+                mainViewModel.isShowingDialog.value = false
+            },
+            DialogProperties(usePlatformDefaultWidth = true, dismissOnBackPress = true, dismissOnClickOutside = true),
+        ) {
+            Box(
+                contentAlignment= Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+                    .background(Color.White, shape = RoundedCornerShape(12.dp))
+            ) {
+                Column(modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Выберите валюту:",
+                        color = Color.Black,
+                        modifier = Modifier
+                            .width(IntrinsicSize.Max)
+                            .padding(10.dp), textAlign = TextAlign.Center,
+                        fontSize = 20.sp,fontFamily = FontFamily.Default
+                    )
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 10.dp)
+                    ) {
+                        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                            itemsIndexed(mainViewModel.listOfAvailableCurrencies) { index: Int, item: AvailableCurrencyDto ->
+                                Text(
+                                    modifier = Modifier.fillMaxSize()
+                                        .padding(bottom = 10.dp)
+                                        .clickable {
+
+
+                                            mainViewModel.baseCurrency.value = item.abbreviation
+                                            if (!mainViewModel.refreshCurrencyPairs(baseCurrency = item.abbreviation)) {
+                                                applicationContext.toast("Ошибка запроса в сеть. Данные не обновленны")
+                                            }
+                                            mainViewModel.isShowingDialog.value = false
+
+                                            PreferenceStorage.baseCurrency = item.abbreviation
+                                        },
+                                    text = "${item.abbreviation} (${item.name})", fontSize = 20.sp, color = Color.Black)
+                            }
+                        }
+                    }
+
+
+                }
             }
         }
     }
