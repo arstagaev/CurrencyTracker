@@ -2,6 +2,7 @@ package com.arstagaev.currencyratetracker1.ui
 
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.CountDownTimer
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,7 +34,6 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     var listOfPairCurrencies = mutableStateListOf<CurrencyDto>()
 
     var baseCurrency = mutableStateOf(PreferenceStorage.baseCurrency)
-
     var sortStyle = mutableStateOf(
             when(PreferenceStorage.sortStyle) {
                 "1" -> SortState.BY_ABBREVIATION_ASC
@@ -48,28 +48,37 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     var isShowingDialog = mutableStateOf(false)
     var connectionState = mutableStateOf<ConnectionState>(ConnectionState.Unavailable)
 
+
     init {
         isLoading.value = true
-        refreshCurrencyPairs(baseCurrency.value)
+
+        CoroutineScope(viewModelScope.coroutineContext).launch {
+            delay(1000)
+            getAvailableCurrencies()
+            delay(1500)
+            refreshCurrencyPairs(baseCurrency.value)
+        }
+
     }
+
+
 
     fun getAvailableCurrencies(): Boolean {
         var isSuccess = false
         listOfAvailableCurrencies.clear()
 
         viewModelScope.launch(Dispatchers.IO) {
-            if (isNotFrequentRequest() && connectionState.value == ConnectionState.Available) {
+            if (connectionState.value == ConnectionState.Available) {
                 repo.getAvailableCurrencies().onEach {
                     when(it) {
                         is Resource.Loading -> {
-                            logInfo("Loading..")
+                            logInfo("getAvailableCurrencies Loading..")
                             isLoading.value = true
                         }
                         is Resource.Success -> {
-                            logInfo("Success..")
+                            logInfo("getAvailableCurrencies Success..")
                             //for tests
                             val inputAvailableCur = arrayListOf<AvailableCurrencyDto>()
-                            //getAvailableCurrenciesFromDB()
 
 
                             it.data.symbols?.forEach { (abbreviation, name) ->
@@ -92,7 +101,6 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                             isSuccess = true
                         }
                         is Resource.Error -> {
-
                             logError("Error in: getAvailableCurrencies()")
                             // may be we are offline:
                             refreshAvailableCurrenciesFromDB()
@@ -122,11 +130,11 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                 repo.getAllPairsCurrencies(baseCurrency = baseCurrency).onEach {
                     when(it) {
                         is Resource.Loading -> {
-                            logInfo("Loading..")
+                            logInfo("refreshCurrencyPairs Loading..")
                             isLoading.value = true
                         }
                         is Resource.Success -> {
-                            logInfo("Success..")
+                            logInfo("refreshCurrencyPairs Success..")
 
                             var inputAvailableCur = arrayListOf<CachedCurrencyPairsDto>()
 
@@ -151,7 +159,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                             isSuccess = true
                         }
                         is Resource.Error -> {
-                            logError("Error in: getAvailableCurrencies()")
+                            logError("Error in: getAvailableCurrencies() ${it.causes}")
                             // may be we are offline:
                             refreshPairCurrenciesFromDB(sortStyle.value)
                             isLoading.value = false

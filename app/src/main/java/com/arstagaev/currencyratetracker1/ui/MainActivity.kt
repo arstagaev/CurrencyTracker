@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -53,21 +54,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val splashViewModel: MainActivityViewModel by viewModels()
     private val mainViewModel: MainViewModel by viewModels()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-//        installSplashScreen().apply {
-//            setKeepOnScreenCondition { splashViewModel.isLoading.value }
-//        }
-        if (!mainViewModel.getAvailableCurrencies()) {
-            applicationContext.toast("Ошибка запроса в сеть. Данные не обновленны")
-        }
-
-        mainViewModel.isShowingDialog.value = false
 
         setContent {
             CurrencyRateTracker1Theme {

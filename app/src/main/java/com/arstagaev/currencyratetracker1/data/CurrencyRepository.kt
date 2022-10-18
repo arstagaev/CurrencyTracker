@@ -5,6 +5,7 @@ import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrency
 import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.remote.ApiRoutes
 import com.arstagaev.currencyratetracker1.data.remote.CurrencyApi
+import com.arstagaev.currencyratetracker1.data.remote.StatusCode
 import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
 import com.arstagaev.currencyratetracker1.data.remote.models.CurrencyPairs
 import com.arstagaev.currencyratetracker1.ui.enums.SortState
@@ -38,8 +39,19 @@ class CurrencyRepository @Inject constructor(
         try {
 
             val searchResult = currencyApi.getLatest(base = baseCurrency, apikey = ApiRoutes.API_KEY)
+            val body = searchResult.body()
             logAction("${searchResult.toString()}")
-            emit(Resource.Success(data = searchResult))
+
+            if (body != null) {
+
+                emit(Resource.Success(data = body))
+
+            } else {
+                var cause = StatusCode.values().find { it.code == searchResult.code() }?.name ?: StatusCode.Unknown.name
+
+                emit(Resource.Error(causes = "Ошибка: $cause"))
+            }
+
 
         } catch (e: Exception) {
             emit(Resource.Error(e))
