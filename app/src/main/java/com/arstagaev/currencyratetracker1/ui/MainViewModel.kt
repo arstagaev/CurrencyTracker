@@ -7,7 +7,9 @@ import com.arstagaev.currencyratetracker1.data.CurrencyRepository
 import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
+import com.arstagaev.currencyratetracker1.data.local.sharedpref.PreferenceStorage
 import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
+import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.utils.Resource
 import com.arstagaev.currencyratetracker1.utils.logAction
 import com.arstagaev.currencyratetracker1.utils.logError
@@ -39,7 +41,15 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
 
     //private val _elements2 = mutableStateListOf<CurrencyDto>()
     //val elements2: List<CurrencyDto> = listOfPairCurrencies
-
+    var sortStyle = mutableStateOf(
+            when(PreferenceStorage.sortStyle) {
+                "1" -> SortState.BY_ABBREVIATION_ASC
+                "2" -> SortState.BY_ABBREVIATION_DESC
+                "3" -> SortState.BY_VALUE_ASC
+                "4" -> SortState.BY_VALUE_DESC
+                else -> SortState.BY_ABBREVIATION_ASC
+            }
+        )
     var isLoading = mutableStateOf(true)
     var isPendulumState = mutableStateOf(false)
     //private val _currentDoorLocks = MutableStateFlow<Resource<ListOfCurrencies>>()
@@ -106,7 +116,12 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         }
     }
 
-    fun refreshCurrencyPairs(baseCurrency: String) {
+    fun refreshCurrencyPairs(baseCurrency: String?): Boolean{
+        var isSuccess = false
+        if(baseCurrency == null || baseCurrency.toCharArray().size != 3) {
+            return false
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             repo.getAllPairsCurrencies(baseCurrency = baseCurrency).onEach {
                 when(it) {
@@ -117,8 +132,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                     is Resource.Success -> {
                         logInfo("Success..")
 
-                        //for tests
-                        val inputAvailableCur = arrayListOf<CachedCurrencyPairsDto>()
+                        var inputAvailableCur = arrayListOf<CachedCurrencyPairsDto>()
 
 
                         it.data.rates?.forEach { (abbreviation, value)->
@@ -136,14 +150,16 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                         logInfo("input: ${inputAvailableCur.joinToString()}")
 
                         // get may be new
-                        refreshPairCurrenciesFromDB()
+                        refreshPairCurrenciesFromDB(sortStyle.value)
                         isLoading.value = false
+                        isSuccess = true
                     }
                     is Resource.Error -> {
                         logError("Error in: getAvailableCurrencies()")
                         // may be we are offline:
-                        refreshPairCurrenciesFromDB()
+                        refreshPairCurrenciesFromDB(sortStyle.value)
                         isLoading.value = false
+                        isSuccess = false
                     }
                 }
 //                bleCommandTrain.emit(it)
@@ -151,6 +167,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                 //_currentDoorLocks.value = (it)
             }.launchIn(viewModelScope)
         }
+        return isSuccess
     }
 
     suspend fun updateFavState(index: Int, abbreviation: String, newFavoriteState: Boolean) {
@@ -159,9 +176,18 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         //getPairCurrenciesFromDB()
     }
 
+    suspend fun sortByAbbreviation(byAscending: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repo.sortByAbbreviation(byAscending)
+            refreshPairCurrenciesFromDB(sortStyle.value)
+        }
+
+    }
 
 
-    // get
+    /**
+     * Refresh UI from DB
+     */
 
     private fun refreshAvailableCurrenciesFromDB() {
         viewModelScope.launch {
@@ -176,18 +202,15 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
 
     }
 
-    fun refreshPairCurrenciesFromDB() {
+    fun refreshPairCurrenciesFromDB(sortState: SortState) {
         viewModelScope.launch {
             isLoading.value = true
             listOfPairCurrencies.clear()
 
-            logAction(">>>  ${repo.getWholeListCurrencies()?.size}")
             delay(10)
-            repo.getWholeListCurrencies()?.let { listOfPairCurrencies.addAll(it) }
+            repo.getWholeListCurrencies(sortState)?.let { listOfPairCurrencies.addAll(it) }
             delay(100)
-            repo.getWholeListCurrencies()?.forEach {
-                println("~~~ ${it.toString()}")
-            }
+
             logAction("<>>> ${listOfPairCurrencies.joinToString()}")
             isLoading.value = false
         }

@@ -4,10 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
+import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPairsDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
-import com.arstagaev.currencyratetracker1.ui.models.Currency
 
 @Dao
 interface CurrencyDao {
@@ -37,34 +36,51 @@ interface CurrencyDao {
   suspend fun saveCurrency(currency: AvailableCurrencyDto)
 
 
-
-
-  // upd bool flags:
+  /**
+   * Update Bool Flags: isBase, isFavorite
+   */
   @Query("UPDATE AvailableCurrencyDto SET isBase = :isBase_ WHERE abbreviation == :abbreviation_ ")
   suspend fun updateTargetCurrency(abbreviation_: String, isBase_: Boolean): Int?
 
   @Query("UPDATE AvailableCurrencyDto SET isFavorite = :isFavorite_ WHERE abbreviation == :abbreviation_ ")
   suspend fun updateFavCurrency(abbreviation_: String, isFavorite_: Boolean): Int?
 
-  @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation")
-  suspend fun getWhole(): List<CurrencyDto>
 
-
+  /**
+   * Get Base Currency
+   */
   @Query("SELECT * FROM AvailableCurrencyDto WHERE isBase = 'true'")
   suspend fun getCurrencyBase(): AvailableCurrencyDto
 
 
+  /**
+   * Get Whole List with Custom Sort
+   */
+  @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation ORDER BY abbreviation ASC")
+  suspend fun getWholeByAbbreviationAsc(): List<CurrencyDto>?
 
-  // get whole
+  @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation ORDER BY abbreviation DESC")
+  suspend fun getWholeByAbbreviationDesc(): List<CurrencyDto>?
 
+  @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation ORDER BY value ASC")
+  suspend fun getWholeByValueAsc(): List<CurrencyDto>?
+
+  @Query("SELECT * FROM AvailableCurrencyDto, CachedCurrencyPairsDto WHERE AvailableCurrencyDto.abbreviation = CachedCurrencyPairsDto.abbreviation ORDER BY value DESC")
+  suspend fun getWholeByValueDesc(): List<CurrencyDto>?
+
+  /**
+   *  Get Target Table
+   */
   @Query("SELECT * FROM CachedCurrencyPairsDto")
   suspend fun getCurrencyPairsCached(): CachedCurrencyPairsDto?
 
   @Query("SELECT * FROM AvailableCurrencyDto")
   suspend fun getCurrencies(): List<AvailableCurrencyDto>?
 
-  // get with filter
 
+  /**
+   * Get Cell by Filter
+   */
   @Query("SELECT * FROM AvailableCurrencyDto WHERE abbreviation = :abbreviation_")
   suspend fun getCurrencyById(abbreviation_: String): AvailableCurrencyDto?
 
@@ -75,8 +91,19 @@ interface CurrencyDao {
   suspend fun getTargetCurrency(): AvailableCurrencyDto?
 
 
+  /**
+   * Sort
+   */
+  @Query("SELECT * FROM CachedCurrencyPairsDto ORDER BY abbreviation DESC")
+  suspend fun getCachedCurrencyPairsDtoSortByAscAbbreviationDesc(): List<CachedCurrencyPairsDto?>?
 
-  // delete
+  @Query("SELECT * FROM CachedCurrencyPairsDto ORDER BY abbreviation ASC")
+  suspend fun getCachedCurrencyPairsDtoSortByAscAbbreviationAsc(): List<CachedCurrencyPairsDto?>?
+
+
+  /**
+   * Delete
+   */
 
   @Query("DELETE FROM CachedCurrencyPairsDto")
   suspend fun deleteCachePairs()

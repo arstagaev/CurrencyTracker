@@ -29,7 +29,7 @@ fun AllCurrenciesScreen(navController: NavHostController, mainViewModel: MainVie
 
 
     Column(
-        Modifier.fillMaxSize( ).background(ColorBackground)
+        Modifier.fillMaxSize( ).background(ColorBackground).padding()
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
             itemsIndexed(mainViewModel.listOfPairCurrencies) { index: Int, item: CurrencyDto ->

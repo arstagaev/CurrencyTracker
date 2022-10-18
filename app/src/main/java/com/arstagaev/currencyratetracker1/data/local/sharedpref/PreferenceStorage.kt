@@ -30,7 +30,11 @@ object PreferenceStorage {
         editor.apply()
     }
 
-
+    var sortStyle: String
+        get() = preferences.getString("nsort","1").toString()
+        set(value) = preferences.edit {
+            it.putString("nsort", value)
+        }
 
 
 }

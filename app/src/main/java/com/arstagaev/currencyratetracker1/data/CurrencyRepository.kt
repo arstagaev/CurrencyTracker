@@ -7,6 +7,7 @@ import com.arstagaev.currencyratetracker1.data.remote.ApiRoutes
 import com.arstagaev.currencyratetracker1.data.remote.CurrencyApi
 import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
 import com.arstagaev.currencyratetracker1.data.remote.models.CurrencyPairs
+import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.utils.Resource
 import com.arstagaev.currencyratetracker1.utils.logAction
 import kotlinx.coroutines.flow.Flow
@@ -72,5 +73,21 @@ class CurrencyRepository @Inject constructor(
 
     suspend fun getCachedCurrencies() = currenciesDao.getCurrencies()
 
-    suspend fun getWholeListCurrencies() = currenciesDao.getWhole()
+    suspend fun getWholeListCurrencies(sortState: SortState) = when(sortState) {
+        SortState.BY_ABBREVIATION_ASC -> currenciesDao.getWholeByAbbreviationAsc()
+        SortState.BY_ABBREVIATION_DESC -> currenciesDao.getWholeByAbbreviationDesc()
+        SortState.BY_VALUE_ASC -> currenciesDao.getWholeByValueAsc()
+        SortState.BY_VALUE_DESC -> currenciesDao.getWholeByValueDesc()
+    }
+
+    /**
+     * Sorting
+     */
+    suspend fun sortByAbbreviation(byAscending: Boolean) {
+        if (byAscending) {
+            currenciesDao.getCachedCurrencyPairsDtoSortByAscAbbreviationAsc()
+        } else {
+            currenciesDao.getCachedCurrencyPairsDtoSortByAscAbbreviationDesc()
+        }
+    }
 }

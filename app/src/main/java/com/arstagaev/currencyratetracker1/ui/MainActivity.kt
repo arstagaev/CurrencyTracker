@@ -22,6 +22,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.arstagaev.currencyratetracker1.data.local.sharedpref.PreferenceStorage
+import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.ui.navigation.Screen
 import com.arstagaev.currencyratetracker1.ui.screens.AllCurrenciesScreen
 import com.arstagaev.currencyratetracker1.ui.screens.FavoriteCurrenciesScreen
@@ -30,6 +32,7 @@ import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.ui.theme.CurrencyRateTracker1Theme
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -57,7 +60,7 @@ class MainActivity : ComponentActivity() {
                         .background(ColorBackground),
                     scaffoldState = scaffoldState,
                     topBar = {
-                        TopBar()
+                        TopBar(navController)
                     },
                     content = {
                         NavigationScreen(navController, it)
@@ -72,7 +75,8 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterialApi::class)
     @Composable
-    fun TopBar() {
+    fun TopBar(navController: NavHostController) {
+        val coroutineScope = rememberCoroutineScope()
         Row(
             Modifier
                 .fillMaxWidth()
@@ -132,7 +136,7 @@ class MainActivity : ComponentActivity() {
                                     selectedOptionText = selectionOption.abbreviation
 
                                     expanded = false
-
+                                    mainViewModel.refreshCurrencyPairs(selectedOptionText)
 
                                 }
                             ) {
@@ -148,6 +152,11 @@ class MainActivity : ComponentActivity() {
                     .weight(1f)
                     .align(Alignment.CenterVertically)
                     .padding(vertical = 20.dp, horizontal = 30.dp)
+                    .clickable {
+                        navController.navigate(Screen.ToSortCurrencies.route)
+
+
+                    }
             ) {
                 Image(modifier = Modifier.size(60.dp), painter = painterResource(id = CurRDrawable.baseline_sort_24), contentDescription = "Sort")
                 //Text(modifier = Modifier, text = "Сортировка", fontSize = 20.sp, color = Color.Black)
@@ -176,32 +185,35 @@ class MainActivity : ComponentActivity() {
 //
 //            }
 //        }
-        NavHost(
-            navController = navController,
-            startDestination = Screen.AllCurrencies.route
-        ) {
-            composable(
-                route = Screen.AllCurrencies.route
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.AllCurrencies.route
             ) {
-                AllCurrenciesScreen(navController,mainViewModel)
+                composable(
+                    route = Screen.AllCurrencies.route
+                ) {
+                    AllCurrenciesScreen(navController,mainViewModel)
+                }
+
+                composable(
+                    route = Screen.FavCurrencies.route
+                ) {
+                    FavoriteCurrenciesScreen(navController,mainViewModel)
+
+                    //mainViewModel.refreshPairCurrenciesFromDB()
+                }
+
+                composable(
+                    route = Screen.ToSortCurrencies.route
+                ) {
+                    SortScreen(navController,mainViewModel)
+                    //mainViewModel.refreshPairCurrenciesFromDB()
+                }
+
             }
-
-            composable(
-                route = Screen.FavCurrencies.route
-            ) {
-                FavoriteCurrenciesScreen(navController,mainViewModel)
-
-                //mainViewModel.refreshPairCurrenciesFromDB()
-            }
-
-            composable(
-                route = Screen.ToSortCurrencies.route
-            ) {
-                SortScreen(navController,mainViewModel)
-                //mainViewModel.refreshPairCurrenciesFromDB()
-            }
-
         }
+
     }
 
     @Composable
@@ -239,6 +251,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        mainViewModel.refreshPairCurrenciesFromDB()
+        mainViewModel.refreshPairCurrenciesFromDB(mainViewModel.sortStyle.value)
     }
 }
