@@ -282,22 +282,31 @@ class MainActivity : ComponentActivity() {
                         fontSize = 20.sp,fontFamily = FontFamily.Default
                     )
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 10.dp)
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
                     ) {
-                        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+                        LazyColumn(modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp)) {
                             itemsIndexed(mainViewModel.listOfAvailableCurrencies) { index: Int, item: AvailableCurrencyDto ->
                                 Text(
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier
+                                        .fillMaxSize()
                                         .padding(bottom = 10.dp)
                                         .clickable {
+                                            if (mainViewModel.connectionState.value == ConnectionState.Available) {
+                                                mainViewModel.let {
+                                                    it.baseCurrency.value = item.abbreviation
+                                                    it.refreshCurrencyPairs(baseCurrency = item.abbreviation)
+                                                    it.isShowingDialog.value = false
+                                                }
 
-                                            mainViewModel.let {
-                                                it.baseCurrency.value = item.abbreviation
-                                                it.refreshCurrencyPairs(baseCurrency = item.abbreviation)
-                                                it.isShowingDialog.value = false
+                                                PreferenceStorage.baseCurrency = item.abbreviation
+                                            } else {
+                                                ctx.toast("Нет сети. Оффлайн режим")
                                             }
 
-                                            PreferenceStorage.baseCurrency = item.abbreviation
                                         },
                                     text = "${item.abbreviation} (${item.name})", fontSize = 20.sp, color = Color.Black)
                             }

@@ -195,8 +195,10 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
             listOfAvailableCurrencies.clear()
 
             repo.getCachedCurrencies()?.let { listOfAvailableCurrencies.addAll(it) }
-            delay(100)
+            logAction("refreshAvailableCurrenciesFromDB(): ${listOfPairCurrencies.joinToString()}")
+            delay(1000)
             isLoading.value = false
+            refreshPairCurrenciesFromDB(sortStyle.value)
         }
 
     }
