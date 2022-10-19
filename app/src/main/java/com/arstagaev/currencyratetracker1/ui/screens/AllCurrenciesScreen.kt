@@ -22,41 +22,48 @@ import com.arstagaev.currencyratetracker1.ui.custom_tools.ShimmerAnimation
 import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
 import com.arstagaev.currencyratetracker1.utils.extensions.roundTo4decimals
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
 
 
 @Composable
 fun AllCurrenciesScreen(navController: NavHostController, mainViewModel: MainViewModel) {
 
-
-    Column(
-        Modifier.fillMaxSize( ).background(ColorBackground).padding()
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(mainViewModel.isLoading.value),
+        onRefresh = { mainViewModel.getAvailableCurrencies() },
     ) {
-        if (mainViewModel.listOfPairCurrencies.isEmpty()) {
-            LazyColumn {
-                items(10) { index ->
-                    ShimmerAnimation()
-                }
-
-            }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                itemsIndexed(mainViewModel.listOfPairCurrencies) { index: Int, item: CurrencyDto ->
-
-                    if(mainViewModel.isLoading.value) {
-                        repeat(10) {
-                            ShimmerAnimation()
-                        }
-
-                    } else {
-                        CurrencyRow(index,item,mainViewModel)
+        Column(
+            Modifier.fillMaxSize().background(ColorBackground).padding()
+        ) {
+            if (mainViewModel.listOfPairCurrencies.isEmpty()) {
+                LazyColumn {
+                    items(10) { index ->
+                        ShimmerAnimation()
                     }
 
                 }
-            }
-        }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    itemsIndexed(mainViewModel.listOfPairCurrencies) { index: Int, item: CurrencyDto ->
 
+                        if(mainViewModel.isLoading.value) {
+                            repeat(10) {
+                                ShimmerAnimation()
+                            }
+
+                        } else {
+                            CurrencyRow(index,item,mainViewModel)
+                        }
+
+                    }
+                }
+            }
+
+        }
     }
+
 }
 @Composable
 fun CurrencyRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
