@@ -14,7 +14,7 @@ Which we also can add in app, in future:
 3. Search target currency
 
 
-<img src="https://github.com/arstagaev/CurrencyTracker/blob/master/demo/screenshoot.jpeg" style="width:300px" />
+<img src="https://github.com/arstagaev/CurrencyTracker/blob/master/demo/screenshoot.jpg" style="width:300px" />
 
 
 demo video: https://github.com/arstagaev/CurrencyTracker/blob/master/demo/demo.mp4
