@@ -14,6 +14,9 @@ Which we also can add in app, in future:
 3. Search target currency
 
 
+Sometimes server long answer to request, maybe can help changing api key
+
+
 <img src="https://github.com/arstagaev/CurrencyTracker/blob/master/demo/screenshoot.jpg" style="width:300px" />
 
 

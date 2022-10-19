@@ -51,8 +51,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         CoroutineScope(viewModelScope.coroutineContext).launch {
             delay(1000)
             getAvailableCurrencies()
-            delay(1500)
-            refreshCurrencyPairs(baseCurrency.value)
+
         }
 
     }
@@ -92,13 +91,14 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
 
                             // get may be new
                             refreshAvailableCurrenciesFromDB()
-                            isLoading.value = false
+                            refreshCurrencyPairs(baseCurrency.value)
+                            isLoading.value = true
                         }
                         is Resource.Error -> {
                             logError("Error in: getAvailableCurrencies()")
                             // may be we are offline:
                             refreshAvailableCurrenciesFromDB()
-                            isLoading.value = false
+                            isLoading.value = true
                             toastReminder.emit("Ошибка загрузки из Интернет")
                         }
                     }

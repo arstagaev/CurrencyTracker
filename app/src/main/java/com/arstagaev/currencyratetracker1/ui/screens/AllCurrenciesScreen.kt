@@ -32,20 +32,30 @@ fun AllCurrenciesScreen(navController: NavHostController, mainViewModel: MainVie
     Column(
         Modifier.fillMaxSize( ).background(ColorBackground).padding()
     ) {
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            itemsIndexed(mainViewModel.listOfPairCurrencies) { index: Int, item: CurrencyDto ->
-
-                if(mainViewModel.isLoading.value) {
-                    repeat(3) {
-                        ShimmerAnimation()
-                    }
-
-                } else {
-                    CurrencyRow(index,item,mainViewModel)
+        if (mainViewModel.listOfPairCurrencies.isEmpty()) {
+            LazyColumn {
+                items(10) { index ->
+                    ShimmerAnimation()
                 }
 
             }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                itemsIndexed(mainViewModel.listOfPairCurrencies) { index: Int, item: CurrencyDto ->
+
+                    if(mainViewModel.isLoading.value) {
+                        repeat(10) {
+                            ShimmerAnimation()
+                        }
+
+                    } else {
+                        CurrencyRow(index,item,mainViewModel)
+                    }
+
+                }
+            }
         }
+
     }
 }
 @Composable
