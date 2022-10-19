@@ -13,4 +13,6 @@ Which we also can add in app, in future:
 2. If server may allow more requsts per minute - we can add realtime update
 3. Search target currency
 
-demo:
+
+
+demo video: https://github.com/arstagaev/CurrencyTracker/blob/master/demo/demo.mp4
