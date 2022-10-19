@@ -1,8 +1,5 @@
 package com.arstagaev.currencyratetracker1.ui
 
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
-import android.os.CountDownTimer
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +8,6 @@ import com.arstagaev.currencyratetracker1.data.local.db.models.CachedCurrencyPai
 import com.arstagaev.currencyratetracker1.data.local.db.models.AvailableCurrencyDto
 import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
 import com.arstagaev.currencyratetracker1.data.local.sharedpref.PreferenceStorage
-import com.arstagaev.currencyratetracker1.data.remote.models.AvailableCurrencies
 import com.arstagaev.currencyratetracker1.ui.enums.SortState
 import com.arstagaev.currencyratetracker1.utils.Resource
 import com.arstagaev.currencyratetracker1.utils.check_internet.ConnectionState
@@ -47,7 +43,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
     var isPendulumState = mutableStateOf(false)
     var isShowingDialog = mutableStateOf(false)
     var connectionState = mutableStateOf<ConnectionState>(ConnectionState.Unavailable)
-
+    var toastReminder = MutableSharedFlow<String>(5,0, BufferOverflow.SUSPEND)
 
     init {
         isLoading.value = true
@@ -63,8 +59,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
 
 
 
-    fun getAvailableCurrencies(): Boolean {
-        var isSuccess = false
+    fun getAvailableCurrencies(){
         listOfAvailableCurrencies.clear()
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -98,31 +93,32 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                             // get may be new
                             refreshAvailableCurrenciesFromDB()
                             isLoading.value = false
-                            isSuccess = true
                         }
                         is Resource.Error -> {
                             logError("Error in: getAvailableCurrencies()")
                             // may be we are offline:
                             refreshAvailableCurrenciesFromDB()
                             isLoading.value = false
-                            isSuccess = false
+                            toastReminder.emit("Ошибка загрузки из Интернет")
                         }
                     }
                 }.launchIn(viewModelScope)
             } else {
                 refreshAvailableCurrenciesFromDB()
                 isLoading.value = false
-                isSuccess = false
             }
 
         }
-        return isSuccess
     }
 
-    fun refreshCurrencyPairs(baseCurrency: String?): Boolean {
-        var isSuccess = false
+    fun refreshCurrencyPairs(baseCurrency: String?) {
         if(baseCurrency == null || baseCurrency.toCharArray().size != 3) {
-            return isSuccess
+
+            CoroutineScope(viewModelScope.coroutineContext).launch {
+                toastReminder.emit("Неправильное сокр. название валюты: ${baseCurrency.toString()}")
+            }
+
+            return
         }
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -156,26 +152,23 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                             // get may be new
                             refreshPairCurrenciesFromDB(sortStyle.value)
                             isLoading.value = false
-                            isSuccess = true
+
                         }
                         is Resource.Error -> {
                             logError("Error in: getAvailableCurrencies() ${it.causes}")
                             // may be we are offline:
                             refreshPairCurrenciesFromDB(sortStyle.value)
                             isLoading.value = false
-                            isSuccess = false
-
+                            toastReminder.emit("Ошибка загрузки из Интернет: ${it.causes}")
                         }
                     }
                 }.launchIn(viewModelScope)
             } else {
                 refreshPairCurrenciesFromDB(sortStyle.value)
                 isLoading.value = false
-                isSuccess = false
             }
 
         }
-        return isSuccess
     }
 
     suspend fun updateFavState(index: Int, abbreviation: String, newFavoriteState: Boolean) {
@@ -214,7 +207,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
             listOfPairCurrencies.clear()
 
             repo.getWholeListCurrencies(sortState)?.let { listOfPairCurrencies.addAll(it) }
-            delay(100)
+            delay(1000)
 
             logAction("refreshPairCurrenciesFromDB(): ${listOfPairCurrencies.joinToString()}")
             isLoading.value = false

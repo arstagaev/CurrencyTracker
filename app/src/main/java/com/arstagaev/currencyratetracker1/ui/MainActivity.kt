@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,7 +49,9 @@ import com.arstagaev.currencyratetracker1.utils.check_internet.ConnectionState
 import com.arstagaev.currencyratetracker1.utils.check_internet.connectivityState
 import com.arstagaev.currencyratetracker1.utils.extensions.toast
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -59,6 +61,12 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        CoroutineScope(lifecycleScope.coroutineContext).launch {
+            mainViewModel.toastReminder.collect {
+                applicationContext.toast("${it}")
+            }
+        }
 
         setContent {
             CurrencyRateTracker1Theme {
@@ -116,8 +124,6 @@ class MainActivity : ComponentActivity() {
                     .background(Color.LightGray),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-
-                //var chosenCurrency    by remember { mainViewModel.baseCurrency  }
 
                 Box(
                     Modifier
@@ -285,12 +291,11 @@ class MainActivity : ComponentActivity() {
                                         .padding(bottom = 10.dp)
                                         .clickable {
 
-
-                                            mainViewModel.baseCurrency.value = item.abbreviation
-                                            if (!mainViewModel.refreshCurrencyPairs(baseCurrency = item.abbreviation)) {
-                                                applicationContext.toast("Ошибка запроса в сеть. Данные не обновленны")
+                                            mainViewModel.let {
+                                                it.baseCurrency.value = item.abbreviation
+                                                it.refreshCurrencyPairs(baseCurrency = item.abbreviation)
+                                                it.isShowingDialog.value = false
                                             }
-                                            mainViewModel.isShowingDialog.value = false
 
                                             PreferenceStorage.baseCurrency = item.abbreviation
                                         },

@@ -73,13 +73,12 @@ fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: Ma
         }
     }
 }
-@OptIn(ExperimentalAnimationApi::class)
+
 @Composable
 fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val ctx = LocalContext.current
-    var isFav by remember { mutableStateOf(item.isFavorite) }
-    // This will detect any changes to data and recompose your composable.
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -126,20 +125,9 @@ fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) 
                                 newFavoriteState = !item.isFavorite
                             )
                         }
-                        //isFav = !item.isFavorite
+
                         mainViewModel.listOfPairCurrencies[index] =
                             mainViewModel.listOfPairCurrencies[index].copy(isFavorite = !item.isFavorite)
-                        //mainViewModel.updateUI()
-//                        mainViewModel.changeValue(
-//                            index,
-//                            CurrencyDto(
-//                                item.abbreviation,
-//                                item.name,
-//                                item.isBase,
-//                                !item.isFavorite,
-//                                item.value
-//                            )
-//                        )
 
                     }
             ) {

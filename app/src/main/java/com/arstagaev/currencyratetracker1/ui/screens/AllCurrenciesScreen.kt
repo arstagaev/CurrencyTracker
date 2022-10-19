@@ -21,6 +21,7 @@ import com.arstagaev.currencyratetracker1.data.local.db.models.CurrencyDto
 import com.arstagaev.currencyratetracker1.ui.custom_tools.ShimmerAnimation
 import com.arstagaev.currencyratetracker1.ui.theme.ColorBackground
 import com.arstagaev.currencyratetracker1.utils.CurRDrawable
+import com.arstagaev.currencyratetracker1.utils.extensions.roundTo4decimals
 import kotlinx.coroutines.launch
 
 
@@ -68,7 +69,7 @@ fun CurrencyRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
         ) {
             Text(
                 modifier = Modifier.padding(start = 15.dp),
-                text = "${item.abbreviation}  ${item.value}",
+                text = "${item.abbreviation}  ${item.value.roundTo4decimals()}",
                 color = Color.Black,
                 fontSize = 20.sp
             )
