@@ -6,11 +6,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -28,11 +31,11 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun AllCurrenciesScreen(navController: NavHostController, mainViewModel: MainViewModel) {
+fun AllCurrenciesScreen(mainViewModel: MainViewModel) {
 
     SwipeRefresh(
         state = rememberSwipeRefreshState(mainViewModel.isLoading.value),
-        onRefresh = { mainViewModel.getAvailableCurrencies() },
+        onRefresh = { mainViewModel.refreshCurrencyPairs(baseCurrency = mainViewModel.baseCurrency.value)},
     ) {
         Column(
             Modifier.fillMaxSize().background(ColorBackground).padding()
@@ -75,12 +78,15 @@ fun CurrencyRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
             .fillMaxWidth()
             .height(70.dp)
             .padding(7.dp),
-        elevation = 20.dp
+        elevation = 3.dp,
+        shape = RoundedCornerShape(10.dp)
     ) {
         Row(
             Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(Color.White)
+                .clickable(onClick = {})
+            ,
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -92,15 +98,15 @@ fun CurrencyRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
             )
             Box(
                 Modifier
-                    .size(50.dp)
-                    .padding(16.dp)
+                    .size(55.dp)
+                    .padding(top = 5.dp, bottom = 5.dp, end = 10.dp)
+                    .clip(RoundedCornerShape(30.dp))
                     .clickable {
-
                         coroutineScope.launch {
                             mainViewModel.updateFavState(index, item.abbreviation, newFavoriteState = !item.isFavorite)
                         }
-                        isFav = !item.isFavorite
 
+                        isFav = !item.isFavorite
                     }
             ) {
                 Image(

@@ -61,13 +61,8 @@ class CurrencyRepository @Inject constructor(
     /**
      * Local:
      */
-    suspend fun setAvailableCurrencies(listOfCurrencies: ArrayList<AvailableCurrencyDto>) =
-        currenciesDao.saveCurrencies(currencies = listOfCurrencies)
     suspend fun saveCurrenciesPairs(listOfPairCurrencies: ArrayList<CachedCurrencyPairsDto>) =
         currenciesDao.saveCurrenciesPairs(pairCurrencies = listOfPairCurrencies)
-
-
-
 
     suspend fun setAvailableCurrency(currency: AvailableCurrencyDto) {
 
@@ -77,29 +72,19 @@ class CurrencyRepository @Inject constructor(
 
     }
 
-    suspend fun updateBaseCurrency(abbreviation: String, isBase: Boolean) =
-        currenciesDao.updateTargetCurrency(abbreviation_ = abbreviation, isBase_ = isBase)
-
     suspend fun updateFavCurrency(abbreviation: String, isFavorite: Boolean) =
         currenciesDao.updateFavCurrency(abbreviation_ = abbreviation, isFavorite_ = isFavorite)
 
     suspend fun getCachedCurrencies() = currenciesDao.getCurrencies()
 
+
+    /**
+     * Sorting
+     */
     suspend fun getWholeListCurrencies(sortState: SortState) = when(sortState) {
         SortState.BY_ABBREVIATION_ASC -> currenciesDao.getWholeByAbbreviationAsc()
         SortState.BY_ABBREVIATION_DESC -> currenciesDao.getWholeByAbbreviationDesc()
         SortState.BY_VALUE_ASC -> currenciesDao.getWholeByValueAsc()
         SortState.BY_VALUE_DESC -> currenciesDao.getWholeByValueDesc()
-    }
-
-    /**
-     * Sorting
-     */
-    suspend fun sortByAbbreviation(byAscending: Boolean) {
-        if (byAscending) {
-            currenciesDao.getCachedCurrencyPairsDtoSortByAscAbbreviationAsc()
-        } else {
-            currenciesDao.getCachedCurrencyPairsDtoSortByAscAbbreviationDesc()
-        }
     }
 }

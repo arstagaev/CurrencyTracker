@@ -94,16 +94,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterialApi::class)
     @Composable
     fun TopBar(navController: NavHostController) {
-        val coroutineScope = rememberCoroutineScope()
 
-        Column(
-            Modifier
-                .fillMaxWidth()
-
-        ) {
+        Column(Modifier.fillMaxWidth())
+        {
             AnimatedVisibility(visible = mainViewModel.connectionState.value == ConnectionState.Unavailable){
                 Row(
                     Modifier
@@ -121,7 +116,7 @@ class MainActivity : ComponentActivity() {
                 Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .background(Color.LightGray),
+                    .background(Color.Blue.copy(0.1f)),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
 
@@ -154,7 +149,6 @@ class MainActivity : ComponentActivity() {
                         }
                 ) {
                     Image(modifier = Modifier.size(60.dp), painter = painterResource(id = CurRDrawable.baseline_sort_24), contentDescription = "Sort")
-                    //Text(modifier = Modifier, text = "Сортировка", fontSize = 20.sp, color = Color.Black)
                 }
             }
         }
@@ -167,21 +161,8 @@ class MainActivity : ComponentActivity() {
     ) {
         // create vm by factory
         var mainViewModel = hiltViewModel<MainViewModel>()
-        //val availableCurrencies = mainViewModel.bleCommandTrain.collectAsState(initial = null) //remember {  }
 
-        LaunchedEffect(true) {
-//            availableCurrencies.collect {
-//                logAction("ANSWER::: ${it.toString()}")
-//            }
-//            availableCurrencies.value?.let {
-//                logAction("ANSWER::: ${it.value}")
-//            }
-        }
-//        LazyColumn(modifier = listModifier) {
-//            itemsIndexed(availableCurrencies) {
-//
-//            }
-//        }
+
         Box(modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
@@ -192,22 +173,19 @@ class MainActivity : ComponentActivity() {
                 composable(
                     route = Screen.AllCurrencies.route
                 ) {
-                    AllCurrenciesScreen(navController,mainViewModel)
+                    AllCurrenciesScreen(mainViewModel)
                 }
 
                 composable(
                     route = Screen.FavCurrencies.route
                 ) {
-                    FavoriteCurrenciesScreen(navController,mainViewModel)
-
-                    //mainViewModel.refreshPairCurrenciesFromDB()
+                    FavoriteCurrenciesScreen(mainViewModel)
                 }
 
                 composable(
                     route = Screen.ToSortCurrencies.route
                 ) {
                     SortScreen(navController,mainViewModel)
-                    //mainViewModel.refreshPairCurrenciesFromDB()
                 }
             }
             if (mainViewModel.isShowingDialog.value) {
@@ -224,7 +202,7 @@ class MainActivity : ComponentActivity() {
             Modifier
                 .fillMaxWidth()
                 .height(90.dp)
-                .background(Color.Gray),
+                .background(Color.Blue.copy(0.5f)),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically) {
             Box(

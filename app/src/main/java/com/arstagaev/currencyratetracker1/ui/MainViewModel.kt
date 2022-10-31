@@ -39,6 +39,7 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                 else -> SortState.BY_ABBREVIATION_ASC
             }
         )
+
     var isLoading = mutableStateOf(true)
     var isPendulumState = mutableStateOf(false)
     var isShowingDialog = mutableStateOf(false)
@@ -51,12 +52,13 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         CoroutineScope(viewModelScope.coroutineContext).launch {
             delay(1000)
             getAvailableCurrencies()
-
         }
 
     }
 
-
+    /**
+     * Api requests
+     */
 
     fun getAvailableCurrencies(){
         listOfAvailableCurrencies.clear()
@@ -67,11 +69,12 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
                     when(it) {
                         is Resource.Loading -> {
                             logInfo("getAvailableCurrencies Loading..")
+
                             isLoading.value = true
                         }
                         is Resource.Success -> {
                             logInfo("getAvailableCurrencies Success..")
-                            //for tests
+
                             val inputAvailableCur = arrayListOf<AvailableCurrencyDto>()
 
 
@@ -176,17 +179,9 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
         repo.updateFavCurrency(abbreviation = abbreviation, isFavorite = newFavoriteState)
     }
 
-    suspend fun sortByAbbreviation(byAscending: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.sortByAbbreviation(byAscending)
-            refreshPairCurrenciesFromDB(sortStyle.value)
-        }
-
-    }
-
 
     /**
-     * Refresh UI from DB
+     * Refresh UI from DB (if we are offline)
      */
 
     private fun refreshAvailableCurrenciesFromDB() {
@@ -217,14 +212,4 @@ class MainViewModel @Inject constructor(private val repo: CurrencyRepository) : 
 
     }
 
-    private fun isNotFrequentRequest() : Boolean {
-        val lastRequestTime = PreferenceStorage.lastTimeOfRequestAvailableCurrency.toLongOrNull()
-
-        return lastRequestTime != null && (System.currentTimeMillis() - lastRequestTime) < AVAILABLE_REQUEST_INTERVAL
-    }
-
-    companion object {
-        // 2 hours:
-        const val AVAILABLE_REQUEST_INTERVAL = 7_200_000L
-    }
 }

@@ -10,12 +10,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -35,7 +37,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: MainViewModel) {
+fun FavoriteCurrenciesScreen(mainViewModel: MainViewModel) {
 
     Column(
         Modifier
@@ -49,14 +51,11 @@ fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: Ma
             ) { index: Int, item: CurrencyDto ->
 
                 if(mainViewModel.isLoading.value) {
-                    repeat(3) {
-                        ShimmerAnimation()
-                    }
+                    ShimmerAnimation()
 
                 }else {
                     AnimatedVisibility(
                         visible = item.isFavorite,
-                        //enter = scaleIn(animationSpec = tween(durationMillis = 1000)),
                         exit = scaleOut(animationSpec = tween(durationMillis = 1000))
                     ) {
                         if (mainViewModel.isPendulumState.value) {
@@ -66,7 +65,6 @@ fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: Ma
                         } else {
                             CurrencyFavRow(index,item,mainViewModel)
                         }
-
                     }
                 }
             }
@@ -74,6 +72,7 @@ fun FavoriteCurrenciesScreen(navController: NavHostController, mainViewModel: Ma
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) {
     val coroutineScope = rememberCoroutineScope()
@@ -83,26 +82,24 @@ fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) 
         modifier = Modifier
             .fillMaxWidth()
             .height(70.dp)
-            .padding(7.dp),
-        elevation = 20.dp
+            .padding(7.dp)
+        ,
+        elevation = 10.dp,
+        shape = RoundedCornerShape(10.dp)
     ) {
         Row(
             Modifier
                 .fillMaxSize()
-                .background(Color.LightGray.copy(0.9f))
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = { },
-                        onDoubleTap = { },
-                        onLongPress = {
-                            // My easter egg for reviewer:
-                            mainViewModel.isPendulumState.value =
-                                !mainViewModel.isPendulumState.value
-                            ctx.toast("Пасхалка: строки могут еще так крутиться)")
-                        },
-                        onTap = { }
-                    )
-                },
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        // My easter egg for reviewer:
+                        mainViewModel.isPendulumState.value =
+                            !mainViewModel.isPendulumState.value
+                        ctx.toast("Пасхалка: строки могут еще так крутиться)")
+                    }
+
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -115,7 +112,9 @@ fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) 
             Box(
                 Modifier
                     .size(50.dp)
-                    .padding(16.dp)
+                    .padding(top = 5.dp, bottom = 5.dp, end = 10.dp)
+                    .clip(RoundedCornerShape(30.dp))
+                    .align(Alignment.CenterVertically)
                     .clickable {
 
                         coroutineScope.launch {
@@ -132,16 +131,14 @@ fun CurrencyFavRow(index: Int, item: CurrencyDto, mainViewModel: MainViewModel) 
                     }
             ) {
                 Image(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier.align(Alignment.Center)
+                    ,
                     painter = painterResource(
                         id = if (mainViewModel.listOfPairCurrencies[index].isFavorite) CurRDrawable.baseline_star_24 else CurRDrawable.baseline_star_border_24
                     ),
                     contentDescription = "favorite"
                 )
             }
-
-
         }
     }
-
 }
