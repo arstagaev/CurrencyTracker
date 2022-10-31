@@ -10,7 +10,7 @@ package com.arstagaev.currencyratetracker1.data.remote
  * GiKFZJkKFjjY6qv4OTcZAEsygxxtnJBg
  */
 object ApiRoutes {
-    const val API_KEY = "aRX9Oyx7OaiwsNtIeJd9Z1NnP2nbaFjR"
+    const val API_KEY = "GiKFZJkKFjjY6qv4OTcZAEsygxxtnJBg"
 
     const val BASE_URL = "https://api.apilayer.com/exchangerates_data/"
 

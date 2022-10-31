@@ -13,7 +13,7 @@ interface CurrencyApi {
     @GET("symbols")
     suspend fun getSymbols(@Query("apikey") apikey: String): AvailableCurrencies
 
-    // get latest rate for currency pairs
+    // get latest rate for currency pair
     @GET("latest")
     suspend fun getLatest(
         @Query("apikey") apikey: String,
